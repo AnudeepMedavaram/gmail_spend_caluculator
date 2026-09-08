@@ -71,7 +71,6 @@ def normalize_email(message):
     """
 
     headers = get_headers(message)
-
     payload = message.get("payload", {})
 
     return Email(
