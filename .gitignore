@@ -4,4 +4,5 @@ token.json
 .venv/
 __pycache__/
 *.pyc
-git status
+data/raw/
+data/processed/
