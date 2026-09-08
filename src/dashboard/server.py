@@ -1,6 +1,8 @@
 import json
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+import subprocess
+import sys
 from urllib.error import HTTPError, URLError
 from urllib.request import urlopen
 
@@ -8,6 +10,7 @@ from urllib.request import urlopen
 HOST = "127.0.0.1"
 PORT = 8501
 API_URL = "http://127.0.0.1:8000/dashboard"
+DEMO_API_URL = "http://127.0.0.1:8000/demo-dashboard"
 INDEX_FILE = Path(__file__).with_name("index.html")
 
 
@@ -22,12 +25,51 @@ class DashboardHandler(BaseHTTPRequestHandler):
             return
 
         if path == "/api/dashboard":
-            self._send_dashboard_data()
+            self._send_dashboard_data(API_URL)
+            return
+
+        if path == "/api/demo-dashboard":
+            self._send_dashboard_data(DEMO_API_URL)
+            return
+
+        if path == "/auth/start":
+            self._start_gmail_auth()
             return
 
         self._send_json(
             {"error": "Not found"},
             status=404,
+        )
+
+    def _start_gmail_auth(self) -> None:
+        project_root = Path(__file__).resolve().parents[2]
+
+        try:
+            subprocess.Popen(
+                [sys.executable, "gmail_auth.py"],
+                cwd=project_root,
+                creationflags=getattr(
+                    subprocess,
+                    "CREATE_NEW_PROCESS_GROUP",
+                    0,
+                ),
+            )
+
+        except OSError as error:
+            self._send_json(
+                {"error": f"Could not start Gmail OAuth: {error}"},
+                status=500,
+            )
+            return
+
+        self._send_json(
+            {
+                "status": "started",
+                "message": (
+                    "Gmail OAuth started. Complete the browser flow, "
+                    "then refresh the dashboard."
+                ),
+            }
         )
 
     def _send_file(self) -> None:
@@ -53,9 +95,9 @@ class DashboardHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
-    def _send_dashboard_data(self) -> None:
+    def _send_dashboard_data(self, api_url: str) -> None:
         try:
-            with urlopen(API_URL, timeout=5) as response:
+            with urlopen(api_url, timeout=5) as response:
                 body = response.read()
 
         except (HTTPError, URLError, OSError) as error:

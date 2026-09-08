@@ -268,6 +268,8 @@
       <div class="actions">
         <span id="status" class="status">Connecting</span>
         <button id="refresh" class="refresh" type="button">Refresh data</button>
+        <button id="demo" class="refresh secondary" type="button">Load synthetic demo</button>
+        <button id="connect" class="refresh secondary" type="button">Connect Gmail</button>
       </div>
     </header>
 
@@ -312,6 +314,10 @@
       <article class="panel">
         <div class="panel-heading"><h2>Worth attention</h2><p class="panel-note">Deterministic flags</p></div>
         <ul id="unusual" class="insights"></ul>
+      </article>
+      <article class="panel wide">
+        <div class="panel-heading"><h2>Upcoming payments</h2><p class="panel-note">Future-dated transactions</p></div>
+        <ul id="upcoming" class="insights"></ul>
       </article>
       <article class="panel wide">
         <div class="panel-heading"><h2>Transactions</h2><p id="transaction-note" class="panel-note"></p></div>
@@ -383,8 +389,10 @@
     function renderAgentFindings(analysis) {
       const recurring = document.getElementById("recurring");
       const unusual = document.getElementById("unusual");
+      const upcoming = document.getElementById("upcoming");
       const recurringItems = analysis.recurring_payments || [];
       const unusualItems = analysis.unusual_transactions || [];
+      const upcomingItems = analysis.upcoming_payments || [];
 
       recurring.innerHTML = recurringItems.length
         ? recurringItems.map((item) => `
@@ -398,9 +406,13 @@
       unusual.innerHTML = unusualItems.length
         ? unusualItems.map((item) => `<li>${text(item.message, "No explanation")}${item.gmail_url ? ` <a href="${item.gmail_url}" target="_blank" rel="noreferrer">View email</a>` : ""}</li>`).join("")
         : '<li class="empty">No unusual payments detected.</li>';
+
+      upcoming.innerHTML = upcomingItems.length
+        ? upcomingItems.map((item) => `<li>${text(item.message, "No upcoming payment")}${item.gmail_url ? ` <a href="${item.gmail_url}" target="_blank" rel="noreferrer">View email</a>` : ""}</li>`).join("")
+        : '<li class="empty">No upcoming payments detected.</li>';
     }
 
-    async function loadDashboard() {
+    async function loadDashboard(endpoint = "/api/dashboard") {
       const status = document.getElementById("status");
       const error = document.getElementById("error");
       status.textContent = "Loading";
@@ -408,7 +420,7 @@
       error.style.display = "none";
 
       try {
-        const response = await fetch("/api/dashboard");
+        const response = await fetch(endpoint);
         const dashboard = await response.json();
         if (!response.ok) throw new Error(dashboard.error || "Dashboard API request failed");
 
@@ -434,6 +446,13 @@
     }
 
     document.getElementById("refresh").addEventListener("click", loadDashboard);
+    document.getElementById("demo").addEventListener("click", () => loadDashboard("/api/demo-dashboard"));
+    document.getElementById("connect").addEventListener("click", async () => {
+      const response = await fetch("/auth/start");
+      const result = await response.json();
+      document.getElementById("error").textContent = result.message || result.error || "OAuth started";
+      document.getElementById("error").style.display = "block";
+    });
     loadDashboard();
   </script>
 </body>

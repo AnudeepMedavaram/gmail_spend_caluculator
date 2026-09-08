@@ -75,6 +75,8 @@ python gmail_auth.py
 
 The generated `token.json`, credentials, raw Gmail data, processed data, and ML artifacts are excluded from Git.
 
+The dashboard also provides a **Connect Gmail** button. It starts the same read-only OAuth flow in the background; complete the Google browser flow and refresh the dashboard afterward.
+
 Raw Gmail data is stored in `data/raw/` and generated transactions are stored in `data/processed/`. Both directories are ignored by Git.
 
 ## Commands
@@ -139,6 +141,10 @@ python -m src.dashboard.server
 Open `http://127.0.0.1:8501` in a browser.
 
 The dashboard also shows recurring payments, transactions worth attention, and links back to the source Gmail message when a message ID is available.
+
+It also flags future-dated transactions as upcoming payments and explains their expected date and amount.
+
+When the private Gmail dataset has no stored transactions, use the **Load synthetic demo** button in the dashboard. This explicit demo path uses safe fictional transactions to demonstrate recurring payments, unusual-payment explanations, categories, and Gmail traceability links without exposing or training on private email data.
 
 ## AI and Agent Components
 

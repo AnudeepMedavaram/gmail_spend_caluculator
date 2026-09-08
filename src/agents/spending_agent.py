@@ -175,6 +175,37 @@ def unusual_transactions(
     return findings
 
 
+def upcoming_payments(
+    transactions: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Find transactions dated after today and explain why they are upcoming."""
+
+    today = datetime.now().date()
+    upcoming = []
+
+    for transaction in transactions:
+        transaction_date = _date(transaction)
+        if transaction_date is None or transaction_date.date() <= today:
+            continue
+
+        merchant = str(transaction.get("merchant") or "unknown")
+        amount = _amount(transaction)
+        upcoming.append(
+            {
+                "merchant": merchant,
+                "amount": amount,
+                "date": transaction_date.strftime("%Y-%m-%d"),
+                "message": (
+                    f"An upcoming payment of {amount:.2f} to {merchant} "
+                    f"is dated {transaction_date.strftime('%Y-%m-%d')}."
+                ),
+                "gmail_url": transaction.get("gmail_url"),
+            }
+        )
+
+    return sorted(upcoming, key=lambda item: item["date"])
+
+
 def run_spending_agent(
     transactions: list[dict[str, Any]],
 ) -> dict[str, Any]:
@@ -183,11 +214,13 @@ def run_spending_agent(
     enriched = enrich_transactions(transactions)
     recurring = recurring_payments(enriched)
     unusual = unusual_transactions(enriched)
+    upcoming = upcoming_payments(enriched)
 
     return {
         "transactions": enriched,
         "recurring_payments": recurring,
         "unusual_transactions": unusual,
+        "upcoming_payments": upcoming,
         "agent_insights": [
             item["explanation"]
             for item in recurring

@@ -6,6 +6,7 @@ import os
 
 
 SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
+OAUTH_PORT = 8080
 
 
 def authenticate_gmail():
@@ -30,7 +31,7 @@ def authenticate_gmail():
                 SCOPES
             )
 
-            creds = flow.run_local_server(port=8000)
+            creds = flow.run_local_server(port=OAUTH_PORT)
 
         # Save the token locally
         with open("token.json", "w") as token:
