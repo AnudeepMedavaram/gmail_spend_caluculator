@@ -4,6 +4,7 @@ from typing import Any, Callable
 
 from src.api.service import (
     build_dashboard,
+    build_demo_dashboard,
     get_health,
     get_insights,
     get_report,
@@ -23,6 +24,7 @@ ROUTES: dict[str, Callable[[], Any]] = {
     "/insights": get_insights,
     "/report": get_report,
     "/dashboard": build_dashboard,
+    "/demo-dashboard": build_demo_dashboard,
 }
 
 
