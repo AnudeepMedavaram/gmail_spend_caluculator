@@ -2,6 +2,7 @@ from typing import Any
 
 from src.analysis.analysis import build_insights
 from src.analysis.aggregator import build_spending_summary
+from src.agents.spending_agent import run_spending_agent
 from src.processing.storage import load_transactions
 from src.reporting.report import generate_report
 
@@ -10,14 +11,23 @@ def build_dashboard() -> dict[str, Any]:
     """Load stored transactions and build all Phase 5-6 outputs."""
 
     transactions = load_transactions()
+    agent_result = run_spending_agent(transactions)
+    transactions = agent_result["transactions"]
     summary = build_spending_summary(transactions)
     analysis = build_insights(transactions, summary)
+    analysis["recurring_payments"] = agent_result["recurring_payments"]
+    analysis["unusual_transactions"] = agent_result["unusual_transactions"]
+    analysis["insights"].extend(agent_result["agent_insights"])
     report = generate_report(summary, analysis["insights"])
 
     return {
         "transactions": transactions,
         "summary": summary,
         "analysis": analysis,
+        "agent": {
+            "name": "spending_agent",
+            "type": "deterministic coordinator",
+        },
         "report": report,
     }
 

@@ -6,6 +6,7 @@ from src.processing.classifier import classify_emails
 from src.processing.extractor import extract_transaction
 from src.processing.validator import validate_transaction
 from src.processing.storage import save_transactions
+from src.agents.spending_agent import categorize_transaction, gmail_message_url
 
 
 EMAILS_FILE = Path(
@@ -185,6 +186,12 @@ def main():
             ),
             "transaction_type": transaction.transaction_type,
         }
+        transaction_record["category"] = categorize_transaction(
+            transaction_record
+        )
+        transaction_record["gmail_url"] = gmail_message_url(
+            email.message_id
+        )
 
         extracted_transactions.append(
             transaction_record

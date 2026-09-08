@@ -1,204 +1,204 @@
 # Polaris Gmail Spend Intelligence
 
-> Turn everyday Gmail receipts and payment emails into a clear picture of where your money goes.
+> Turning a noisy inbox into a clear picture of where money goes.
 
-Polaris is a local **AI/ML-powered spending intelligence prototype** that reads Gmail messages, identifies transaction-related emails, extracts spending information, and turns it into useful spending summaries and insights.
+Polaris is a local-first spending intelligence product built around a simple belief: financial data is already hiding in the inbox, but it is difficult to search, structure, and understand.
 
-The project combines **deterministic rules with Machine Learning** to make transaction detection more reliable while keeping the system explainable.
+The system discovers spending-related Gmail messages, extracts transaction details, validates them, summarizes spending, and presents the result through a local API and dashboard.
 
----
+This repository is the focused baseline: explainable rules first, a small ML experiment second, and a complete path from email to insight.
 
-## 💡 What Does Polaris Do?
+## Why Polaris
 
-Instead of manually searching through emails for receipts and payment confirmations, Polaris processes them automatically:
+Most inboxes contain receipts, invoices, payment confirmations, subscription notices, newsletters, and financial articles side by side. Keyword search can find some of them, but it cannot reliably distinguish a real charge from an article discussing prices.
 
-**Gmail → Find transactions → Extract details → Validate → Analyze spending → View insights**
+Polaris creates a structured transaction layer from that noise:
 
-For example:
+- **Discover** relevant Gmail messages.
+- **Classify** transaction candidates with transparent rules.
+- **Extract** merchant, amount, currency, date, and transaction type.
+- **Validate** the extracted record before storage.
+- **Analyze** spending by category, merchant, and month.
+- **Highlight** recurring payments, unusual amounts, and first-time merchants.
+- **Expose** the result through a local API and dashboard.
+
+## Architecture and Technical Decisions
 
 ```text
-Amazon payment email
-        ↓
-Transaction detected
-        ↓
-Merchant: Amazon
-Amount:   $49.99
-Date:     2026-08-28
-        ↓
-Added to spending analysis
-        ↓
-Shopping spending increases
-🤖 AI / ML Component
-
-The project uses a hybrid approach.
-
-Rule-Based Classifier
-
-Identifies transaction emails using signals such as:
-
-Payment-related keywords
-Merchant information
-Amount patterns
-Currency patterns
-Transaction-related language
-Machine Learning Classifier
-
-A lightweight ML baseline was added using:
-
-TF-IDF for converting email text into numerical features
-Logistic Regression for transaction classification
-
-The ML model acts as a secondary signal while the rule-based system remains the final decision maker.
-
-                 Email
-                   ↓
-          Rule-Based Classifier
-                   ↓
-          ML Classifier
-       TF-IDF + Logistic Regression
-                   ↓
-            ML Signal
-                   ↓
-          Final Decision
-
-This design keeps the system interpretable, lightweight, and easy to debug.
-
-ML Baseline Results
-
-Evaluated on a small synthetic dataset:
-
-Metric	Score
-Accuracy	75.0%
-Precision	66.7%
-Recall	100.0%
-F1 Score	80.0%
-
-These results are treated as a baseline because the current ML dataset is intentionally small.
-
-🏗️ System Architecture
 Gmail
-  │
-  ▼
-Ingestion & Normalization
-  │
-  ▼
-Transaction Classification
-  │
-  ├── Rule-Based Detection
-  └── ML Supporting Signal
-  │
-  ▼
-Transaction Extraction
-  │
-  ▼
-Validation
-  │
-  ▼
-Local JSONL Storage
-  │
-  ▼
-Spending Aggregation
-  │
-  ▼
-Analysis & Insights
-  │
-  ├── REST API
-  └── Dashboard
-✨ Key Features
-📧 Gmail API integration
-🔍 Transaction email detection
-🤖 TF-IDF + Logistic Regression ML baseline
-🧾 Transaction extraction
-✅ Data validation
-📊 Spending aggregation and analysis
-💡 Automatic spending insights
-🌐 Local REST API
-📈 Browser-based dashboard
-🧪 Automated pipeline testing
-🔒 Local processing for private Gmail data
-📁 Project Structure
-polaris_gmail_spend_intelligence/
-│
-├── data/
-│   ├── raw/
-│   ├── processed/
-│   └── ml_artifacts/
-│
-├── src/
-│   ├── gmail/          # Gmail integration
-│   ├── ingestion/      # Email ingestion
-│   ├── models/         # Data models
-│   ├── processing/     # Classification & extraction
-│   ├── ml/             # ML training & evaluation
-│   ├── analysis/       # Spending analysis
-│   ├── reporting/      # Reports
-│   ├── api/            # REST API
-│   ├── dashboard/      # Web dashboard
-│   └── testing/        # Pipeline tests
-│
-├── requirements.txt
-├── .gitignore
-└── README.md
-🚀 Getting Started
-1. Create a virtual environment
+      -> Email discovery
+      -> Normalization
+      -> Rule-based classification
+      -> Optional ML supporting signal
+      -> Transaction extraction
+      -> Validation
+      -> JSONL storage
+      -> Aggregation and insights
+      -> Local API and dashboard
+```
+
+The rule-based classifier remains the primary decision-maker because it is easy to inspect and debug. JSONL storage keeps the prototype simple and local, while the API and dashboard are implemented with Python's standard library to minimize dependencies. The ML package is an isolated TF-IDF + Logistic Regression baseline trained only on synthetic examples. It provides supporting evidence; it does not replace the deterministic pipeline.
+
+The project also includes a lightweight deterministic spending agent. It coordinates category assignment, recurring-payment detection, unusual-payment explanations, and Gmail traceability links. It is not an LLM and does not call an external AI service.
+
+## Repository Layout
+
+```text
+src/
+├── gmail/       Gmail authentication and API access
+├── ingestion/   Discovery, normalization, and dataset checks
+├── models/      Email model and Gmail payload parser
+├── processing/  Classification, extraction, validation, and storage
+├── analysis/    Spending aggregation and insights
+├── reporting/   Human-readable reports
+├── api/         Local HTTP API
+├── dashboard/   Local browser dashboard
+├── ml/          Synthetic-data ML baseline
+└── testing/     Regression tests
+```
+
+## How to Run Locally
+
+Requires Python 3.10+.
+
+```powershell
 python -m venv .venv
-
-Windows PowerShell:
-
 .\.venv\Scripts\Activate.ps1
-2. Install dependencies
 pip install -r requirements.txt
-3. Train and evaluate the ML baseline
-python -m src.ml.train
-python -m src.ml.evaluate
-4. Run the spending pipeline
+```
+
+For Gmail ingestion, add a Google OAuth client file named `credentials.json` to the project root, then authenticate once:
+
+```powershell
+python gmail_auth.py
+```
+
+The generated `token.json`, credentials, raw Gmail data, processed data, and ML artifacts are excluded from Git.
+
+Raw Gmail data is stored in `data/raw/` and generated transactions are stored in `data/processed/`. Both directories are ignored by Git.
+
+## Commands
+
+Validate the raw dataset:
+
+```powershell
+python -m src.ingestion.validate
+```
+
+Run ingestion after Gmail authentication:
+
+```powershell
+python -m src.ingestion.discover
+```
+
+Run the Phase 4 transaction pipeline:
+
+```powershell
 python -m src.processing.run_phase4
+```
+
+Run individual processing checks:
+
+```powershell
+python -m src.processing.run_classifier
+python -m src.processing.run_extractor
+python -m src.processing.run_validator
+python -m src.processing.run_storage
+```
+
+Run aggregation, analysis, and reporting:
+
+```powershell
 python -m src.analysis.run_aggregator
 python -m src.analysis.run_analysis
 python -m src.reporting.run_report
-5. Run tests
+```
+
+Run tests:
+
+```powershell
 python -m src.testing.run_tests
-6. Start the API
+```
+
+## API and Dashboard
+
+Start the API:
+
+```powershell
 python -m src.api.server
+```
 
-API:
+The API runs at `http://127.0.0.1:8000` and provides `/health`, `/transactions`, `/summary`, `/insights`, `/report`, and `/dashboard`.
 
-http://127.0.0.1:8000
+In another terminal, start the dashboard:
 
-7. Start the dashboard
+```powershell
 python -m src.dashboard.server
+```
 
-Dashboard:
+Open `http://127.0.0.1:8501` in a browser.
 
-http://127.0.0.1:8501
+The dashboard also shows recurring payments, transactions worth attention, and links back to the source Gmail message when a message ID is available.
 
-🛠️ Tech Stack
+## AI and Agent Components
 
-Python · Gmail API · scikit-learn · TF-IDF · Logistic Regression · JSONL · REST API · HTML/CSS/JavaScript
+The project does not use an LLM or external generative-AI API. It uses two lightweight, explainable components:
 
-🔐 Privacy
+1. **ML baseline:** TF-IDF plus Logistic Regression classifies synthetic email text as `transaction` or `non_transaction`. It was chosen as a transparent, low-cost baseline and is used only as supporting evidence for the rule-based classifier.
+2. **Deterministic spending agent:** `src/agents/spending_agent.py` coordinates category assignment, recurring-payment detection, unusual-payment explanations, and Gmail traceability links. It was chosen to keep financial decisions inspectable and private; it does not call an external AI service.
 
-Gmail data is processed locally.
+The optional ML baseline follows this flow:
 
-Private credentials, tokens, raw Gmail data, generated transaction data, and ML artifacts are excluded from the Git repository.
+```text
+Synthetic subject + body
+      -> TF-IDF features
+      -> Logistic Regression
+      -> transaction probability and class
+```
 
-⚠️ Current Limitations
+Train it:
 
-This is a prototype, not a production financial application.
+```powershell
+python -m src.ml.train
+```
 
-Email formats differ between merchants.
-Transaction extraction does not support every receipt format.
-The current ML dataset is small and synthetic.
-The rule-based classifier remains the final decision mechanism.
-🔮 Future Improvements
-Larger real-world labeled dataset
-Better merchant normalization
-Duplicate transaction detection
-Improved transaction extraction
-Stronger ML evaluation
-Transformer/NLP-based classification
-Database-backed storage
-Scheduled Gmail processing
-👨‍💻 Author
+Evaluate it on a held-out synthetic split:
 
-Anudeep Medavaram
+```powershell
+python -m src.ml.evaluate
+```
+
+The ML model supports the deterministic classifier; it does not replace it or claim superiority.
+
+## Testing
+
+```powershell
+python -m src.testing.run_tests
+python -m compileall -q src
+```
+
+## Data and Privacy
+
+Polaris is local-first. Gmail credentials, OAuth tokens, raw email content, processed transactions, and generated ML artifacts should not be committed to a public repository.
+
+Ignored private/generated paths include:
+
+```text
+credentials.json
+token.json
+data/raw/
+data/processed/
+data/ml_artifacts/
+.venv/
+__pycache__/
+```
+
+## Current Scope
+
+This is an explainable prototype rather than a production finance platform. It does not include cloud deployment, a database, authentication, an LLM, or an external AI API. Email formats vary, so extraction will not support every provider or template.
+
+The current Gmail sample may contain zero transaction candidates. The analysis and reporting runners include sample transactions for smoke testing when no processed transactions are available.
+
+## Project Status
+
+The core pipeline, local API, dashboard, ML baseline, and regression tests are implemented. The next product milestone would be improving coverage with a larger, privacy-safe labeled dataset and measuring performance against a meaningful validation set.

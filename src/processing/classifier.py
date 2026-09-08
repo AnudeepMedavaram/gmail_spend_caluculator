@@ -2,7 +2,7 @@ import re
 
 from dataclasses import dataclass
 
-from typing import List
+from typing import List, Optional
 
 from src.models.email import Email
 
@@ -18,6 +18,9 @@ class ClassificationResult:
     is_transaction_candidate: bool
     confidence: float
     matched_signals: List[str]
+    rule_based_score: float = 0.0
+    ml_prediction: Optional[str] = None
+    ml_probability: Optional[float] = None
 
 
 # ============================================================
@@ -244,6 +247,32 @@ def normalize_text(email: Email) -> str:
     )
 
     return text.lower().strip()
+
+
+def get_ml_signal(
+    email: Email,
+) -> tuple[Optional[str], Optional[float]]:
+    """Get optional ML evidence without making classification depend on it."""
+
+    try:
+        from src.ml.classifier import predict_saved_classifier
+
+        from src.ml.features import email_to_text
+
+        prediction = predict_saved_classifier(
+            email_to_text(
+                email.subject,
+                email.body,
+            )
+        )
+
+    except ImportError:
+        return None, None
+
+    if prediction is None:
+        return None, None
+
+    return prediction
 
 
 def find_keyword_signals(text: str) -> List[str]:
@@ -756,6 +785,10 @@ def classify_email(
 
         is_transaction_candidate = False
 
+    # ML is secondary evidence only. The deterministic rule result remains
+    # the final decision so the existing classifier behavior is preserved.
+    ml_prediction, ml_probability = get_ml_signal(email)
+
     # ========================================================
     # FINAL SIGNAL LIST
     # ========================================================
@@ -769,6 +802,12 @@ def classify_email(
         + strong_negative_signals
     )
 
+    if ml_prediction is not None:
+        signals += [
+            f"ml:{ml_prediction}",
+            f"ml_probability:{ml_probability:.2f}",
+        ]
+
     return ClassificationResult(
         message_id=email.message_id,
         is_transaction_candidate=(
@@ -776,6 +815,9 @@ def classify_email(
         ),
         confidence=confidence,
         matched_signals=signals,
+        rule_based_score=confidence,
+        ml_prediction=ml_prediction,
+        ml_probability=ml_probability,
     )
 
 
