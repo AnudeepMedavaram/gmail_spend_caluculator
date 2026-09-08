@@ -202,18 +202,3 @@ Scheduled Gmail processing
 👨‍💻 Author
 
 Anudeep Medavaram
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                
